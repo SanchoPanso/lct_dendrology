@@ -1,7 +1,11 @@
 from __future__ import annotations
 
+import asyncio
+import logging
+import os
 from typing import Final
 
+import aiohttp
 from telegram import Update
 from telegram.ext import (
     AIORateLimiter,
@@ -14,25 +18,121 @@ from telegram.ext import (
 )
 
 
+# Configure logging
+logger = logging.getLogger(__name__)
+
+# Configuration
 STUB_TEXT: Final[str] = "Заглушка: изображение получено. Текст будет здесь."
+SERVER_URL: Final[str] = os.getenv("SERVER_URL", "http://localhost:8000")
+TIMEOUT: Final[int] = int(os.getenv("REQUEST_TIMEOUT", "30"))
+
+
+async def send_image_to_server(image_data: bytes, filename: str) -> dict:
+    """
+    Отправляет изображение на сервер для обработки.
+    
+    Args:
+        image_data: Байты изображения
+        filename: Имя файла
+        
+    Returns:
+        Результат обработки от сервера
+        
+    Raises:
+        Exception: При ошибке связи с сервером
+    """
+    async with aiohttp.ClientSession(timeout=aiohttp.ClientTimeout(total=TIMEOUT)) as session:
+        data = aiohttp.FormData()
+        data.add_field('file', image_data, filename=filename, content_type='image/jpeg')
+        
+        try:
+            async with session.post(f"{SERVER_URL}/process-image", data=data) as response:
+                if response.status == 200:
+                    result = await response.json()
+                    logger.info(f"Изображение успешно обработано сервером: {filename}")
+                    return result
+                else:
+                    error_text = await response.text()
+                    logger.error(f"Сервер вернул ошибку {response.status}: {error_text}")
+                    raise Exception(f"Сервер вернул ошибку {response.status}")
+                    
+        except asyncio.TimeoutError:
+            logger.error("Таймаут при обращении к серверу")
+            raise Exception("Сервер не отвечает слишком долго")
+        except aiohttp.ClientError as e:
+            logger.error(f"Ошибка связи с сервером: {str(e)}")
+            raise Exception("Не удается подключиться к серверу")
 
 
 async def handle_start(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     if update.effective_message is None:
         return
     await update.effective_message.reply_text(
-        "Привет! Отправь мне изображение, а я верну текст-заглушку."
+        "Привет! Отправь мне изображение, и я проанализирую его с помощью нейросети."
     )
 
 
 async def handle_photo(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     if update.effective_message is None:
         return
+    
     # Photo sizes are sorted by file size, last is the biggest
     if not update.effective_message.photo:
         return
-    # We do not actually need to download the image for the stub reply.
-    await update.effective_message.reply_text(STUB_TEXT)
+    
+    # Отправляем сообщение о том, что изображение получено
+    processing_msg = await update.effective_message.reply_text(
+        "🔄 Обрабатываю изображение..."
+    )
+    
+    try:
+        # Получаем самое большое изображение
+        photo = update.effective_message.photo[-1]
+        
+        # Скачиваем файл
+        file = await context.bot.get_file(photo.file_id)
+        image_data = await file.download_as_bytearray()
+        
+        logger.info(f"Получено изображение размером {len(image_data)} байт")
+        
+        # Отправляем на сервер
+        result = await send_image_to_server(
+            bytes(image_data), 
+            f"photo_{photo.file_id}.jpg"
+        )
+        
+        # Формируем ответ пользователю
+        if result.get("analysis_result"):
+            # Если есть результат анализа, отправляем его
+            response_text = f"📊 Результат анализа:\n\n{result['analysis_result']}"
+        else:
+            # Если результат пустой (заглушка), отправляем соответствующее сообщение
+            response_text = (
+                "✅ Изображение успешно получено!\n\n"
+                "📋 Информация о файле:\n"
+                f"• Размер: {result.get('file_size', 'неизвестно')} байт\n"
+                f"• Тип: {result.get('content_type', 'неизвестно')}\n\n"
+                "🤖 В данный момент нейросеть находится в режиме заглушки. "
+                "Реальные результаты анализа появятся после интеграции модели."
+            )
+        
+        # Обновляем сообщение с результатом
+        await processing_msg.edit_text(response_text)
+        
+    except Exception as e:
+        logger.error(f"Ошибка при обработке изображения: {str(e)}")
+        
+        # Отправляем сообщение об ошибке
+        error_message = (
+            "❌ Произошла ошибка при обработке изображения.\n\n"
+            "Возможные причины:\n"
+            "• Сервер временно недоступен\n"
+            "• Проблемы с подключением к интернету\n"
+            "• Неподдерживаемый формат изображения\n\n"
+            "Попробуйте еще раз через несколько минут."
+        )
+        
+        await processing_msg.edit_text(error_message)
 
 
 def create_application(token: str) -> Application:
