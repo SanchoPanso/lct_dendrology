@@ -2,7 +2,6 @@ from __future__ import annotations
 
 import asyncio
 import logging
-import os
 from typing import Final
 
 import aiohttp
@@ -17,14 +16,16 @@ from telegram.ext import (
     filters,
 )
 
+from lct_dendrology.cfg import settings
+
 
 # Configure logging
 logger = logging.getLogger(__name__)
 
 # Configuration
 STUB_TEXT: Final[str] = "Заглушка: изображение получено. Текст будет здесь."
-SERVER_URL: Final[str] = os.getenv("SERVER_URL", "http://localhost:8000")
-TIMEOUT: Final[int] = int(os.getenv("REQUEST_TIMEOUT", "30"))
+SERVER_URL: Final[str] = f"http://{settings.backend_host}:{settings.backend_port}"
+TIMEOUT: Final[int] = 30  # Можно добавить в настройки при необходимости
 
 
 async def send_image_to_server(image_data: bytes, filename: str) -> dict:

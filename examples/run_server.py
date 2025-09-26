@@ -2,30 +2,39 @@
 """Script to run the FastAPI server."""
 
 import uvicorn
-import os
-from pathlib import Path
+import logging
 
 from lct_dendrology.backend.server import app
+from lct_dendrology.cfg import settings
 
 
 def main() -> None:
-    """Run the FastAPI server."""
-    # Получаем настройки из переменных окружения
-    host = os.getenv("SERVER_HOST", "0.0.0.0")
-    port = int(os.getenv("SERVER_PORT", "8000"))
-    reload = os.getenv("SERVER_RELOAD", "true").lower() == "true"
+    """Запуск FastAPI сервера с использованием настроек из конфига."""
+    # Настройка логирования
+    logging.basicConfig(
+        level=getattr(logging, settings.log_level.upper()),
+        format=settings.log_format
+    )
+    logger = logging.getLogger(__name__)
     
-    print(f"Запуск сервера на http://{host}:{port}")
+    logger.info("Запуск FastAPI сервера...")
+    logger.info(f"Хост: {settings.backend_host}")
+    logger.info(f"Порт: {settings.backend_port}")
+    logger.info(f"Автоперезагрузка: {settings.backend_reload}")
+    logger.info(f"Количество воркеров: {settings.backend_workers}")
+    
+    print(f"Запуск сервера на http://{settings.backend_host}:{settings.backend_port}")
     print("Документация API доступна по адресу: http://localhost:8000/docs")
     print("Альтернативная документация: http://localhost:8000/redoc")
     
     # Запускаем сервер
     uvicorn.run(
         "lct_dendrology.backend.server:app",
-        host=host,
-        port=port,
-        reload=reload,
-        log_level="info"
+        host=settings.backend_host,
+        port=settings.backend_port,
+        reload=settings.backend_reload,
+        workers=settings.backend_workers if not settings.backend_reload else 1,
+        log_level=settings.log_level.lower()
     )
 
 

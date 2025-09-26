@@ -1,23 +1,35 @@
 import asyncio
-import os
-
-from dotenv import load_dotenv
+import logging
 
 from lct_dendrology import create_application
+from lct_dendrology.cfg import settings
 
 
 def main() -> None:
-    load_dotenv(".env")
-    token = os.getenv("TELEGRAM_BOT_TOKEN")
-    if not token:
+    """Запуск Telegram бота с использованием настроек из конфига."""
+    # Настройка логирования
+    logging.basicConfig(
+        level=getattr(logging, settings.log_level.upper()),
+        format=settings.log_format
+    )
+    logger = logging.getLogger(__name__)
+    
+    logger.info("Запуск Telegram бота...")
+    logger.info(f"Уровень логирования: {settings.log_level}")
+    
+    # Проверяем наличие токена
+    if not settings.telegram_bot_token:
         raise RuntimeError(
-            "Environment variable TELEGRAM_BOT_TOKEN is not set. "
-            "Create a .env file or export the variable."
+            "TELEGRAM_BOT_TOKEN не установлен. "
+            "Создайте файл .env или установите переменную окружения."
         )
-
-    application = create_application(token)
-
-    # Use built-in polling runner for simplicity
+    
+    # Создаем приложение бота
+    application = create_application(settings.telegram_bot_token)
+    
+    logger.info("Бот успешно инициализирован. Запуск polling...")
+    
+    # Запускаем бота
     application.run_polling(close_loop=False)
 
 
