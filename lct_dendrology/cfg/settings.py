@@ -45,12 +45,12 @@ class Settings(BaseSettings):
     # Настройки базы данных (если потребуется)
     database_url: Optional[str] = Field(None, description="URL подключения к базе данных")
     
-    class Config:
-        """Конфигурация Pydantic."""
-        env_file = ".env"
-        env_file_encoding = "utf-8"
-        case_sensitive = False
-        extra = "ignore"
+    model_config = {
+        "env_file": ".env",
+        "env_file_encoding": "utf-8",
+        "case_sensitive": False,
+        "extra": "ignore"
+    }
 
 
 # Глобальный экземпляр настроек

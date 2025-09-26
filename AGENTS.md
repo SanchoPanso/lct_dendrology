@@ -9,6 +9,7 @@
 
 ## Directory Structure
 - `lct_dendrology/` — код пакета:
+  - `cfg/` — настройки проекта.
   - `backend/` — FastAPI-приложение с инференсом модели.
   - `bot/` — код Telegram-бота.
   - `training/` — код для обучения моделей.
