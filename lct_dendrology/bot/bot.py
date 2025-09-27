@@ -103,7 +103,7 @@ async def handle_photo(update: Update, context: ContextTypes.DEFAULT_TYPE) -> No
         )
         
         # Формируем ответ пользователю
-        if result.get("analysis_result"):
+        if result["analysis_result"]['inference_enabled'] is True:
             # Если есть результат анализа, отправляем его
             response_text = f"📊 Результат анализа:\n\n{result['analysis_result']}"
         else:
