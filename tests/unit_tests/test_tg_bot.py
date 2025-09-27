@@ -8,7 +8,7 @@ async def test_handle_photo_inference_enabled(monkeypatch):
     # Мокаем update и context
     mock_update = MagicMock()
     mock_context = MagicMock()
-    mock_message = MagicMock()
+    mock_message = AsyncMock()
     mock_update.effective_message = mock_message
     mock_message.photo = [MagicMock(), MagicMock()]
     mock_message.reply_text = AsyncMock(return_value=mock_message)
@@ -65,3 +65,8 @@ async def test_handle_photo_stub(monkeypatch):
 
     # Проверяем, что edit_text вызван с текстом-заглушкой
     assert "нейросеть находится в режиме заглушки" in mock_message.edit_text.call_args[0][0]
+
+
+if __name__ == "__main__":
+    import sys
+    sys.exit(pytest.main([__file__]))

@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+import io
+import pandas as pd
 import asyncio
 import logging
 from typing import Final
@@ -95,6 +97,23 @@ def format_analysis_result(analysis: dict) -> str:
     )
 
 
+def analysis_to_excel(analysis: dict) -> io.BytesIO:
+    """
+    Преобразует результат анализа в Excel-таблицу.
+    Возвращает BytesIO для отправки как файл.
+    """
+    detections = analysis.get('detections', [])
+    if not detections:
+        df = pd.DataFrame([{"Нет объектов": ""}])
+    else:
+        df = pd.DataFrame(detections)
+    output = io.BytesIO()
+    with pd.ExcelWriter(output, engine='xlsxwriter') as writer:
+        df.to_excel(writer, index=False, sheet_name="Detections")
+    output.seek(0)
+    return output
+
+
 async def handle_start(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     if update.effective_message is None:
         return
@@ -136,6 +155,13 @@ async def handle_photo(update: Update, context: ContextTypes.DEFAULT_TYPE) -> No
         analysis = result.get("analysis_result", {})
         if analysis.get('inference_enabled') is True:
             response_text = format_analysis_result(analysis)
+            excel_file = analysis_to_excel(analysis)
+            await processing_msg.edit_text(response_text)
+            await update.effective_message.reply_document(
+                document=excel_file,
+                filename="analysis.xlsx",
+                caption="📄 Таблица с результатами анализа"
+            )
         else:
             # Если результат пустой (заглушка), отправляем соответствующее сообщение
             response_text = (
@@ -146,10 +172,7 @@ async def handle_photo(update: Update, context: ContextTypes.DEFAULT_TYPE) -> No
                 "🤖 В данный момент нейросеть находится в режиме заглушки. "
                 "Реальные результаты анализа появятся после интеграции модели."
             )
-        
-        # Обновляем сообщение с результатом
-        await processing_msg.edit_text(response_text)
-        
+            await processing_msg.edit_text(response_text)
     except Exception as e:
         logger.error(f"Ошибка при обработке изображения: {str(e)}")
         
