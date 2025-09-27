@@ -65,6 +65,36 @@ async def send_image_to_server(image_data: bytes, filename: str) -> dict:
             raise Exception("Не удается подключиться к серверу")
 
 
+def format_analysis_result(analysis: dict) -> str:
+    """
+    Форматирует результат анализа для вывода пользователю.
+    Args:
+        analysis: Словарь с результатом анализа
+    Returns:
+        Строка для отправки пользователю
+    """
+    detections = analysis.get('detections', [])
+    if not detections:
+        return (
+            "📊 Результат анализа:\n\n"
+            "Объекты не обнаружены на изображении."
+        )
+    # Считаем количество объектов каждого класса
+    class_counts = {}
+    for det in detections:
+        name = det.get('class_name', 'unknown')
+        class_counts[name] = class_counts.get(name, 0) + 1
+    detected_list = "\n".join(
+        [f"• {cls}: {count}" for cls, count in class_counts.items()]
+    )
+    return (
+        "📊 Результат анализа:\n\n"
+        "Найденные объекты:\n"
+        f"{detected_list}\n\n"
+        f"Всего объектов: {len(detections)}"
+    )
+
+
 async def handle_start(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     if update.effective_message is None:
         return
@@ -102,10 +132,10 @@ async def handle_photo(update: Update, context: ContextTypes.DEFAULT_TYPE) -> No
             f"photo_{photo.file_id}.jpg"
         )
         
-        # Формируем ответ пользователю
-        if result["analysis_result"]['inference_enabled'] is True:
-            # Если есть результат анализа, отправляем его
-            response_text = f"📊 Результат анализа:\n\n{result['analysis_result']}"
+       # Формируем ответ пользователю
+        analysis = result.get("analysis_result", {})
+        if analysis.get('inference_enabled') is True:
+            response_text = format_analysis_result(analysis)
         else:
             # Если результат пустой (заглушка), отправляем соответствующее сообщение
             response_text = (
