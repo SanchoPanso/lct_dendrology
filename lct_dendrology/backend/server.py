@@ -7,6 +7,7 @@ from fastapi import FastAPI, File, UploadFile, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 
 from lct_dendrology.cfg import settings
+from lct_dendrology.backend.image_processor import image_processor
 
 # Configure logging
 logging.basicConfig(
@@ -44,6 +45,12 @@ async def health_check() -> Dict[str, str]:
     return {"status": "healthy"}
 
 
+@app.get("/processor-info")
+async def get_processor_info() -> Dict[str, Any]:
+    """Возвращает информацию о состоянии процессора изображений."""
+    return image_processor.get_detector_info()
+
+
 @app.post("/process-image")
 async def process_image(file: UploadFile = File(...)) -> Dict[str, Any]:
     """
@@ -71,13 +78,15 @@ async def process_image(file: UploadFile = File(...)) -> Dict[str, Any]:
         
         logger.info(f"Получено изображение: {file.filename}, размер: {len(content)} байт")
         
-        # TODO: Здесь будет реальная обработка изображения с помощью нейросети
-        # На данный момент возвращаем заглушку
+        # Обрабатываем изображение с помощью процессора
+        analysis_result = image_processor.process_image(content)
+        
+        # Формируем результат
         result = {
             "filename": file.filename,
             "file_size": len(content),
             "content_type": file.content_type,
-            "analysis_result": {}  # Заглушка - пустой словарь
+            "analysis_result": analysis_result
         }
         
         logger.info(f"Обработка завершена для файла: {file.filename}")
