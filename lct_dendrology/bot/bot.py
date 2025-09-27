@@ -151,17 +151,18 @@ async def handle_photo(update: Update, context: ContextTypes.DEFAULT_TYPE) -> No
             f"photo_{photo.file_id}.jpg"
         )
         
-       # Формируем ответ пользователю
+        # Формируем ответ пользователю
         analysis = result.get("analysis_result", {})
         if analysis.get('inference_enabled') is True:
             response_text = format_analysis_result(analysis)
-            excel_file = analysis_to_excel(analysis)
             await processing_msg.edit_text(response_text)
-            await update.effective_message.reply_document(
-                document=excel_file,
-                filename="analysis.xlsx",
-                caption="📄 Таблица с результатами анализа"
-            )
+            if getattr(settings, "send_excel_result", True):
+                excel_file = analysis_to_excel(analysis)
+                await update.effective_message.reply_document(
+                    document=excel_file,
+                    filename="analysis.xlsx",
+                    caption="📄 Таблица с результатами анализа"
+                )
         else:
             # Если результат пустой (заглушка), отправляем соответствующее сообщение
             response_text = (

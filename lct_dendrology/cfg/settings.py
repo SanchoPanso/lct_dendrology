@@ -14,6 +14,7 @@ class Settings(BaseSettings):
     telegram_bot_token: str = Field(..., description="Токен Telegram бота")
     telegram_webhook_url: Optional[str] = Field(None, description="URL для webhook Telegram бота")
     telegram_webhook_port: int = Field(8443, description="Порт для webhook")
+    send_excel_result: bool = Field(True, description="Выдавать пользователю файл Excel с результатами анализа")
     
     # Настройки FastAPI Backend
     backend_host: str = Field("0.0.0.0", description="Хост для FastAPI сервера")
