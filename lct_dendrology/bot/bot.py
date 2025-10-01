@@ -1,4 +1,5 @@
 from __future__ import annotations
+from PIL import Image, ImageDraw, ImageFont
 
 import io
 import pandas as pd
@@ -65,6 +66,51 @@ async def send_image_to_server(image_data: bytes, filename: str) -> dict:
         except aiohttp.ClientError as e:
             logger.error(f"Ошибка связи с сервером: {str(e)}")
             raise Exception("Не удается подключиться к серверу")
+
+
+def draw_bboxes_with_ids(image_bytes: bytes, analysis: dict) -> io.BytesIO:
+    """
+    Наносит на изображение bbox-ы с id объектов.
+    Args:
+        image_bytes: исходное изображение в байтах
+        analysis: результат анализа (dict)
+    Returns:
+        BytesIO с изображением
+    """
+    img = Image.open(io.BytesIO(image_bytes)).convert("RGB")
+    draw = ImageDraw.Draw(img)
+    detections = analysis.get('detections', [])
+    # Попробуем использовать стандартный шрифт
+    try:
+        font = ImageFont.truetype("arial.ttf", 26)
+    except Exception:
+        font = ImageFont.load_default()
+
+    for det in detections:
+        bbox = det.get('bbox')
+        obj_id = det.get('id')
+        if bbox:
+            xy = [bbox['x1'], bbox['y1'], bbox['x2'], bbox['y2']]
+            draw.rectangle(xy, outline="green", width=2)
+            # Подпись id внутри bbox (левый верхний угол + небольшой отступ)
+            text_x = bbox['x1'] + 3
+            text_y = bbox['y1'] + 3
+            # Получаем размер текста
+            bbox_text = font.getbbox(f"{obj_id}")
+            text_width = bbox_text[2] - bbox_text[0]
+            text_height = bbox_text[3] - bbox_text[1]
+            # Рисуем увеличенный белый прямоугольник под текстом
+            rect_x1 = text_x - 2
+            rect_y1 = text_y - 2
+            rect_x2 = text_x + text_width + 6
+            rect_y2 = text_y + text_height + 4
+            draw.rectangle([rect_x1, rect_y1, rect_x2, rect_y2], fill="white")
+            # Рисуем зеленый текст поверх
+            draw.text((text_x + 2, text_y + 1), f"{obj_id}", fill="green", font=font)
+    output = io.BytesIO()
+    img.save(output, format="JPEG")
+    output.seek(0)
+    return output
 
 
 def format_analysis_result(analysis: dict) -> str:
@@ -153,6 +199,12 @@ async def handle_photo(update: Update, context: ContextTypes.DEFAULT_TYPE) -> No
         
         # Формируем ответ пользователю
         analysis = result.get("analysis_result", {})
+        # Отрисовываем bbox-ы и отправляем изображение с разметкой
+        marked_image = draw_bboxes_with_ids(bytes(image_data), analysis)
+        await update.effective_message.reply_photo(
+            photo=marked_image,
+            caption="🖼️ Обнаруженные объекты (bbox + id)"
+        )
         if analysis.get('inference_enabled') is True:
             response_text = format_analysis_result(analysis)
             await processing_msg.edit_text(response_text)
