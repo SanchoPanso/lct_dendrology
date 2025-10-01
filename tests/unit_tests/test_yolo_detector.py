@@ -36,12 +36,12 @@ class TestYoloDetector:
     @pytest.fixture
     def yolo_detector(self, mock_yolo_model):
         """Создает экземпляр YoloDetector с мок моделью."""
-        with patch('lct_dendrology.inference.yolo_inference.YOLO', return_value=mock_yolo_model):
+        with patch('lct_dendrology.inference.yolo_detector.YOLO', return_value=mock_yolo_model):
             return YoloDetector()
     
     def test_init_default_model(self, mock_yolo_model):
         """Тест инициализации с моделью по умолчанию."""
-        with patch('lct_dendrology.inference.yolo_inference.YOLO', return_value=mock_yolo_model):
+        with patch('lct_dendrology.inference.yolo_detector.YOLO', return_value=mock_yolo_model):
             detector = YoloDetector()
             
             assert detector.model_path == "yolo11n.pt"
@@ -51,7 +51,7 @@ class TestYoloDetector:
     
     def test_init_custom_parameters(self, mock_yolo_model):
         """Тест инициализации с пользовательскими параметрами."""
-        with patch('lct_dendrology.inference.yolo_inference.YOLO', return_value=mock_yolo_model):
+        with patch('lct_dendrology.inference.yolo_detector.YOLO', return_value=mock_yolo_model):
             detector = YoloDetector(
                 model_path="custom_model.pt",
                 device="cuda",
@@ -133,7 +133,7 @@ class TestYoloDetector:
         mock_model = Mock()
         mock_model.return_value = [mock_result]
         
-        with patch('lct_dendrology.inference.yolo_inference.YOLO', return_value=mock_model):
+        with patch('lct_dendrology.inference.yolo_detector.YOLO', return_value=mock_model):
             detector = YoloDetector()
             image = Image.new('RGB', (100, 100), 'blue')
             
@@ -176,7 +176,7 @@ class TestYoloDetector:
     
     def test_model_loading_error(self):
         """Тест ошибки загрузки модели."""
-        with patch('lct_dendrology.inference.yolo_inference.YOLO', side_effect=Exception("Model not found")):
+        with patch('lct_dendrology.inference.yolo_detector.YOLO', side_effect=Exception("Model not found")):
             with pytest.raises(RuntimeError, match="Не удалось загрузить модель"):
                 YoloDetector()
     

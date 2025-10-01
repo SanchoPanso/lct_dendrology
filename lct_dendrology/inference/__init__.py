@@ -1,6 +1,6 @@
 """Модуль инференса для дендрологических исследований."""
 
-from .yolo_inference import YoloDetector
+from .yolo_detector import YoloDetector
 
 __all__ = ["YoloDetector"]
 
