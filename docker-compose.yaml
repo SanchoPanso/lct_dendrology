@@ -1,0 +1,19 @@
+version: '3.8'
+services:
+  fastapi:
+    build: .
+    container_name: lct_fastapi
+    command: poetry run python examples/run_server.py
+    ports:
+      - "8000:8000"
+    restart: unless-stopped
+  bot:
+    build: .
+    container_name: lct_bot
+    command: poetry run python examples/run_bot.py
+    environment:
+    - BACKEND_HOST="lct_fastapi"
+    # Обычно боту порт не нужен, но если нужен webhook, можно пробросить
+    # ports:
+    #   - "8081:8081"
+    restart: unless-stopped
