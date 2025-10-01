@@ -40,5 +40,4 @@ class YoloClassifier:
             "class_id": class_id,
             "class_name": class_name,
             "confidence": confidence,
-            "all_probs": probs.cpu().tolist()
         }

@@ -5,116 +5,107 @@
 import logging
 from typing import Dict, Any, Optional
 
-from lct_dendrology.inference import YoloDetector
+from lct_dendrology.inference import YoloDetector, YoloClassifier
 from lct_dendrology.cfg import settings
 
 logger = logging.getLogger(__name__)
 
 
+
 class ImageProcessor:
-    """Класс для обработки изображений с помощью YOLO модели."""
-    
+    """Класс для обработки изображений: детекция и классификация деревьев."""
     def __init__(self):
-        """Инициализация процессора изображений."""
-        self._detector: Optional[YoloDetector] = None
-        self._initialize_detector()
-    
-    def _initialize_detector(self) -> None:
-        """Инициализирует YOLO детектор если инференс включен."""
         if settings.model_enable_inference:
-            try:
-                logger.info("Инициализация YOLO детектора...")
-                self._detector = YoloDetector(
-                    model_path=settings.model_path,
-                    device=settings.model_device,
-                    confidence_threshold=settings.model_confidence_threshold,
-                    iou_threshold=settings.model_iou_threshold
-                )
-                logger.info("YOLO детектор успешно инициализирован")
-            except Exception as e:
-                logger.error(f"Ошибка при инициализации YOLO детектора: {str(e)}")
-                self._detector = None
+            self.detector = YoloDetector(
+                model_path=settings.model_path,
+                device=settings.model_device,
+                confidence_threshold=settings.model_confidence_threshold,
+                iou_threshold=settings.model_iou_threshold
+            )
+            self.classifier = YoloClassifier(
+                model_path=settings.classifier_model_path,
+                device=settings.model_device
+            )
         else:
-            logger.info("Инференс модели отключен в настройках")
-    
+            self.detector = None
+            self.classifier = None
+        self.class_confidence_threshold = settings.classifier_confidence_threshold
+
     def process_image(self, image_bytes: bytes) -> Dict[str, Any]:
         """
-        Обрабатывает изображение с помощью YOLO модели.
-        
+        Находит деревья на изображении и классифицирует их породу.
+        Проверяет, что изображение валидное.
         Args:
             image_bytes: Байты изображения
-            
         Returns:
-            Dict с результатами обработки:
-            {
-                'detections': List[Dict] - список найденных объектов (если инференс включен),
-                'model_info': Dict - информация о модели (если инференс включен),
-                'inference_enabled': bool - флаг включения инференса
-            }
+            dict: результат анализа
         """
+        from PIL import Image, UnidentifiedImageError
+        import io
         result = {
             'inference_enabled': settings.model_enable_inference
         }
-        
+        # Проверка валидности изображения
+        try:
+            Image.open(io.BytesIO(image_bytes)).verify()
+        except (UnidentifiedImageError, Exception):
+            result['detections'] = []
+            result['model_info'] = {
+                'status': 'error',
+                'message': 'Файл не может быть открыт как изображение'
+            }
+            return result
+
         if not settings.model_enable_inference:
-            logger.info("Инференс отключен, возвращаем заглушку")
             result['detections'] = []
             result['model_info'] = {
                 'status': 'disabled',
                 'message': 'Инференс модели отключен в настройках'
             }
             return result
-        
-        if self._detector is None:
-            logger.error("YOLO детектор не инициализирован")
-            result['detections'] = []
-            result['model_info'] = {
-                'status': 'error',
-                'message': 'YOLO детектор не инициализирован'
+
+        # Детектируем деревья
+        detection_result = self.detector.predict(image_bytes)
+        detections = detection_result.get('detections', [])
+        classified_detections = []
+        # Классифицируем каждое дерево
+        for det in detections:
+            # Вырезаем область дерева по bbox
+            bbox = det.get('bbox')
+            if bbox:
+                img = Image.open(io.BytesIO(image_bytes)).convert("RGB")
+                crop = img.crop((bbox['x1'], bbox['y1'], bbox['x2'], bbox['y2']))
+                class_result = self.classifier.predict(crop)
+                conf = class_result.get('confidence', 0)
+                if conf >= self.class_confidence_threshold:
+                    det['species'] = class_result.get('class_name')
+                    det['species_confidence'] = conf
+                else:
+                    det['species'] = None
+                    det['species_confidence'] = conf
+            else:
+                det['species'] = None
+                det['species_confidence'] = None
+            classified_detections.append(det)
+        result['detections'] = classified_detections
+        result['model_info'] = {
+            'detector': detection_result.get('model_info'),
+            'classifier': {
+                'model_path': getattr(self.classifier, 'model_path', None),
+                'confidence_threshold': self.class_confidence_threshold
             }
-            return result
-        
-        try:
-            logger.info("Начинаем обработку изображения с помощью YOLO модели")
-            
-            # Выполняем предсказание
-            detection_result = self._detector.predict(image_bytes)
-            
-            # Добавляем результаты детекции
-            result['detections'] = detection_result['detections']
-            result['model_info'] = detection_result['model_info']
-            
-            logger.info(f"Обработка завершена. Найдено объектов: {len(detection_result['detections'])}")
-            
-            return result
-            
-        except Exception as e:
-            logger.error(f"Ошибка при обработке изображения: {str(e)}")
-            result['detections'] = []
-            result['model_info'] = {
-                'status': 'error',
-                'message': f'Ошибка при обработке: {str(e)}'
-            }
-            return result
-    
+        }
+        return result
+
     def get_detector_info(self) -> Dict[str, Any]:
-        """
-        Возвращает информацию о детекторе.
-        
-        Returns:
-            Dict с информацией о детекторе
-        """
-        if self._detector is None:
-            return {
-                'initialized': False,
-                'inference_enabled': settings.model_enable_inference,
-                'message': 'Детектор не инициализирован'
-            }
-        
+        detector_info = None if self.detector is None else self.detector.get_model_info()
+        classifier_info = {
+            'model_path': None if self.classifier is None else getattr(self.classifier, 'model_path', None),
+            'confidence_threshold': self.class_confidence_threshold
+        }
         return {
-            'initialized': True,
-            'inference_enabled': settings.model_enable_inference,
-            'detector_info': self._detector.get_model_info()
+            'detector_info': detector_info,
+            'classifier_info': classifier_info,
         }
 
 

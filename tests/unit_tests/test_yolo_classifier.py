@@ -15,8 +15,6 @@ def make_mock_results():
     mock_probs = MagicMock()
     mock_probs.top1 = 2
     mock_probs.top1conf = 0.85
-    mock_probs.cpu = MagicMock()
-    mock_probs.cpu.return_value = torch.tensor([0.01, 0.14, 0.85])
     mock_result = MagicMock()
     mock_result.probs = mock_probs
     return [mock_result]
@@ -39,7 +37,5 @@ def test_predict_returns_expected_dict(mock_load_model, dummy_image):
     assert result["class_id"] == 2
     assert result["class_name"] == "birch"
     assert result["confidence"] == 0.85
-    assert isinstance(result["all_probs"], list)
-    assert result["all_probs"] == pytest.approx([0.01, 0.14, 0.85])
 
 pytest.main([__file__])

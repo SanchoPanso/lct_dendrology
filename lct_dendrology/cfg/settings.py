@@ -28,7 +28,11 @@ class Settings(BaseSettings):
     model_batch_size: int = Field(1, description="Размер батча для инференса")
     model_confidence_threshold: float = Field(0.25, description="Порог уверенности для детекции (0.0-1.0)")
     model_iou_threshold: float = Field(0.45, description="Порог IoU для NMS (0.0-1.0)")
-    model_enable_inference: bool = Field(False, description="Включить инференс модели (по умолчанию False - заглушка)")
+    model_enable_inference: bool = Field(True, description="Включить инференс модели (по умолчанию False - заглушка)")
+
+    # Настройки классификатора деревьев
+    classifier_model_path: str = Field("yolo11n-cls.pt", description="Путь к модели классификатора деревьев")
+    classifier_confidence_threshold: float = Field(0.5, description="Порог уверенности для классификации породы дерева")
     
     # Настройки логирования
     log_level: str = Field("INFO", description="Уровень логирования")

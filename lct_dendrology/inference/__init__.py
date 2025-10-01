@@ -1,6 +1,5 @@
 """Модуль инференса для дендрологических исследований."""
 
 from .yolo_detector import YoloDetector
-
-__all__ = ["YoloDetector"]
+from .yolo_classifier import YoloClassifier
 
