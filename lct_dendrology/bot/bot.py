@@ -91,7 +91,7 @@ def draw_bboxes_with_ids(image_bytes: bytes, analysis: dict) -> io.BytesIO:
         obj_id = det.get('id')
         if bbox:
             xy = [bbox['x1'], bbox['y1'], bbox['x2'], bbox['y2']]
-            draw.rectangle(xy, outline="green", width=2)
+            draw.rectangle(xy, outline="blue", width=2)
             # Подпись id внутри bbox (левый верхний угол + небольшой отступ)
             text_x = bbox['x1'] + 3
             text_y = bbox['y1'] + 3
@@ -106,7 +106,7 @@ def draw_bboxes_with_ids(image_bytes: bytes, analysis: dict) -> io.BytesIO:
             rect_y2 = text_y + text_height + 4
             draw.rectangle([rect_x1, rect_y1, rect_x2, rect_y2], fill="white")
             # Рисуем зеленый текст поверх
-            draw.text((text_x + 2, text_y + 1), f"{obj_id}", fill="green", font=font)
+            draw.text((text_x + 2, text_y + 1), f"{obj_id}", fill="blue", font=font)
     output = io.BytesIO()
     img.save(output, format="JPEG")
     output.seek(0)
@@ -134,6 +134,7 @@ def format_analysis_result(analysis: dict) -> str:
         obj_id = det.get('id', 'N/A')
         class_name = det.get('class_name', 'unknown')
         species: str = det.get('species', 'unknown')
+        species = species if species is not None else 'unknown'
         detected_list.append(f"{obj_id}. {species.capitalize()}")
     
     detected_list = "\n".join(detected_list)
