@@ -30,6 +30,7 @@ webserver = [
 ]
 tgbot = [
     "python-telegram-bot[rate-limiter] (>=22.4,<23.0)",
+    "xlsxwriter (>=3.2.9,<4.0.0)",
 ]
 
 

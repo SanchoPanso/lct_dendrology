@@ -1,6 +1,8 @@
 # syntax=docker/dockerfile:1
 FROM python:3.12-slim
 
+RUN apt-get update && apt-get install ffmpeg libsm6 libxext6 libgl1 -y
+
 # Установка Poetry
 ENV POETRY_VERSION=2.2.1
 RUN pip3 install "poetry==$POETRY_VERSION" && poetry config virtualenvs.create false
