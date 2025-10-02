@@ -81,14 +81,17 @@ def format_analysis_result(analysis: dict) -> str:
             "📊 Результат анализа:\n\n"
             "Объекты не обнаружены на изображении."
         )
-    # Считаем количество объектов каждого класса
-    class_counts = {}
-    for det in detections:
-        name = det.get('class_name', 'unknown')
-        class_counts[name] = class_counts.get(name, 0) + 1
-    detected_list = "\n".join(
-        [f"• {cls}: {count}" for cls, count in class_counts.items()]
-    )
+    
+    # Формируем нумерованный список объектов
+    detected_list = []
+    for i, det in enumerate(detections):
+        obj_id = det.get('id', 'N/A')
+        class_name = det.get('class_name', 'unknown')
+        species = det.get('species', 'unknown')
+        detected_list.append(f"{i + 1}. ID: {obj_id}, Класс: {class_name}, Вид: {species}")
+    
+    detected_list = "\n".join(detected_list)
+    
     return (
         "📊 Результат анализа:\n\n"
         "Найденные объекты:\n"
