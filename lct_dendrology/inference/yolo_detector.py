@@ -166,7 +166,7 @@ class YoloDetector:
             
             for i, (box, conf, class_id) in enumerate(zip(boxes, confidences, class_ids)):
                 detection = {
-                    'id': i,
+                    'id': i + 1,
                     'class_id': int(class_id),
                     'class_name': class_names[int(class_id)],
                     'confidence': float(conf),

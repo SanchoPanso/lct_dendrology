@@ -133,8 +133,8 @@ def format_analysis_result(analysis: dict) -> str:
     for i, det in enumerate(detections):
         obj_id = det.get('id', 'N/A')
         class_name = det.get('class_name', 'unknown')
-        species = det.get('species', 'unknown')
-        detected_list.append(f"{i + 1}. ID: {obj_id}, Класс: {class_name}, Вид: {species}")
+        species: str = det.get('species', 'unknown')
+        detected_list.append(f"{obj_id}. {species.capitalize()}")
     
     detected_list = "\n".join(detected_list)
     
@@ -206,7 +206,7 @@ async def handle_photo(update: Update, context: ContextTypes.DEFAULT_TYPE) -> No
         marked_image = draw_bboxes_with_ids(bytes(image_data), analysis)
         await update.effective_message.reply_photo(
             photo=marked_image,
-            caption="🖼️ Обнаруженные объекты (bbox + id)"
+            caption="Обнаруженные объекты"
         )
         if analysis.get('inference_enabled') is True:
             response_text = format_analysis_result(analysis)
