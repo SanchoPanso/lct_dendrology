@@ -1,18 +1,31 @@
 version: '3.8'
 services:
   fastapi:
-    build: .
+    image: lct_dendrology:webserver
+    build:
+      context: .
+      args:
+        - POETRY_GROUPS=webserver
+
     container_name: lct_fastapi
     command: poetry run python examples/run_server.py
     ports:
-      - "8000:8000"
+      - "8888:8000"
+    volumes:
+      - "./models:/app/models"
     restart: unless-stopped
   bot:
-    build: .
+    image: lct_dendrology:tgbot
+    build:
+      context: .
+      args:
+        - POETRY_GROUPS=tgbot
     container_name: lct_bot
     command: poetry run python examples/run_bot.py
+    env_file:
+    - .env
     environment:
-    - BACKEND_HOST="lct_fastapi"
+    - BACKEND_HOST=lct_fastapi
     # Обычно боту порт не нужен, но если нужен webhook, можно пробросить
     # ports:
     #   - "8081:8081"

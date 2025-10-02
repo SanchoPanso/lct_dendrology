@@ -1,7 +1,7 @@
 import asyncio
 import logging
 
-from lct_dendrology import create_application
+from lct_dendrology.bot.bot import create_application
 from lct_dendrology.cfg import settings
 
 

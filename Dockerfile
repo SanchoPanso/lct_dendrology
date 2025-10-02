@@ -1,19 +1,23 @@
 # syntax=docker/dockerfile:1
 FROM python:3.12-slim
 
+RUN apt-get update && apt-get install ffmpeg libsm6 libxext6 libgl1 -y
+
 # Установка Poetry
 ENV POETRY_VERSION=2.2.1
-RUN pip install "poetry==$POETRY_VERSION"
+RUN pip3 install "poetry==$POETRY_VERSION" && poetry config virtualenvs.create false
 
 # Создание рабочей директории
 WORKDIR /app
 
 # Копируем pyproject.toml и poetry.lock
-COPY pyproject.toml poetry.lock ./
+COPY pyproject.toml ./
 
 # Устанавливаем зависимости через poetry
-RUN poetry config virtualenvs.in-project true \
-    && poetry install --no-interaction --no-ansi
+ARG POETRY_GROUPS="test"
+RUN poetry install --no-root
+RUN poetry install --extras ${POETRY_GROUPS} --no-root
 
 # Копируем весь проект
 COPY . .
+RUN poetry install --only-root
