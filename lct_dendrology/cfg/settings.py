@@ -29,7 +29,7 @@ class Settings(BaseSettings):
     tree_detector_iou_threshold: float = Field(0.45, description="Порог IoU для NMS (0.0-1.0)")
 
     # Настройки классификатора деревьев
-    classifier_model_path: str = Field("models/species_classifier_v1.pt", description="Путь к модели классификатора деревьев")
+    classifier_model_path: str = Field("models/species_classifier_v2.pt", description="Путь к модели классификатора деревьев")
     classifier_confidence_threshold: float = Field(0.5, description="Порог уверенности для классификации породы дерева")
     
     # Настройки логирования

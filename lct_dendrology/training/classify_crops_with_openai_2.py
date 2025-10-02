@@ -12,7 +12,7 @@ from openai import OpenAI
 # --- Конфигурация ---
 IMAGES_DIR = "/mnt/c/Users/Alex/Downloads/Санитарка(3)/Санитарка/"
 YOLO_LABELS_DIR = "runs/detect/predict2/labels"
-OUTPUT_DIR = "./data/crops_species/"
+OUTPUT_DIR = "./data/crops_dryness/"
 
 client = OpenAI(base_url="http://10.0.71.50:8099/v1/", api_key="EMPTY")
 
@@ -53,32 +53,14 @@ def classify_crop_with_openai(image_bytes: bytes) -> str:
     """Отправляет изображение в OpenAI VLM и возвращает класс."""
     img_str = base64.b64encode(image_bytes).decode("utf-8")
     image_url = f"data:image/png;base64,{img_str}"
-    tree_species = [
-        "береза", 
-        "сосна", 
-        "ель", 
-        "липа", 
-        "дуб", 
-        "осина", 
-        "тополь", 
-        "клен", 
-        "рябина", 
-        "акация",
-        "клен остролистный",
-        "лиственница",
-        "туя",
-        "рябина",
-        "можжевельник",
-        "каштан"
-        "Ива",
-        "клен ясенелистный",
-        "ясень",
-        "вяз",
+    classes = [
+        "сухое",
+        "несухое",
 
     ]
     prompt = (
-        "Определи класс дерева на изображении. "
-        "Выведи только один класс из списка: " + ", ".join(tree_species) + ". "
+        "Определи класс сухости дерева на изображении. "
+        "Выведи только один класс из списка: " + ", ".join(classes) + ". "
         "Если ни один класс не подходит, выведи 'unknown'."
     )
     resp = client.chat.completions.create(
@@ -129,7 +111,7 @@ def process_single_image(img_name):
         crop.save(os.path.join(class_dir, crop_filename))
         print(f"Сохранен {crop_filename} в {class_dir}")
 
-def process_images(num_workers=4):
+def process_images(num_workers=8):
     img_names = [n for n in os.listdir(IMAGES_DIR) if n.lower().endswith(('.jpg', '.jpeg', '.png'))]
     with ThreadPoolExecutor(max_workers=num_workers) as executor:
         futures = [executor.submit(process_single_image, img_name) for img_name in img_names]
