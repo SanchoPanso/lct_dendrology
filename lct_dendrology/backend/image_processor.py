@@ -17,10 +17,10 @@ class ImageProcessor:
     def __init__(self):
         if settings.model_enable_inference:
             self.detector = YoloDetector(
-                model_path=settings.model_path,
+                model_path=settings.tree_detector_model_path,
                 device=settings.model_device,
-                confidence_threshold=settings.model_confidence_threshold,
-                iou_threshold=settings.model_iou_threshold
+                confidence_threshold=settings.tree_detector_confidence_threshold,
+                iou_threshold=settings.tree_detector_iou_threshold
             )
             self.classifier = YoloClassifier(
                 model_path=settings.classifier_model_path,
