@@ -1,10 +1,6 @@
 #!/bin/bash
-set -e
-MODEL_URL="https://github.com/SanchoPanso/lct_dendrology/releases/download/v0.1.0/tree_detector_v1.pt"
 TARGET_DIR="$(dirname "$0")/../models"
-TARGET_PATH="$TARGET_DIR/tree_detector_v1.pt"
 
 mkdir -p "$TARGET_DIR"
-echo "Скачивание модели из $MODEL_URL ..."
-wget -O "$TARGET_PATH" "$MODEL_URL"
-echo "Модель сохранена в $TARGET_PATH"
+wget -O "$TARGET_DIR/species_classifier_v1.pt" "https://github.com/SanchoPanso/lct_dendrology/releases/download/v0.2.0/species_classifier_v1.pt"
+wget -O "$TARGET_DIR/tree_detector_v2.pt" "https://github.com/SanchoPanso/lct_dendrology/releases/download/v0.2.0/tree_detector_v2.pt"
