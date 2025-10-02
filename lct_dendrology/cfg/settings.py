@@ -23,7 +23,7 @@ class Settings(BaseSettings):
     backend_reload: bool = Field(False, description="Автоперезагрузка FastAPI в режиме разработки")
     
     # Настройки модели
-    model_path: Optional[str] = Field("yolo11n.pt", description="Путь к файлу модели YOLO")
+    model_path: Optional[str] = Field("models/tree_detector_v1.pt", description="Путь к файлу модели YOLO")
     model_device: str = Field("cpu", description="Устройство для инференса (cpu/cuda/mps)")
     model_batch_size: int = Field(1, description="Размер батча для инференса")
     model_confidence_threshold: float = Field(0.25, description="Порог уверенности для детекции (0.0-1.0)")
